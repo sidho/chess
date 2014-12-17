@@ -65,7 +65,25 @@ class Board
   end
 
   def in_check?(color)
+    king_pos = find_king(color)
+    @grid.each_with_index do |rows, r|
+      rows.each_with_index do |piece, c|
+        return true if piece && piece.moves.include?(king_pos)
+      end
+    end
+    false
   end
+
+  def find_king(color)
+    @grid.each do |rows|
+      rows.each do |piece|
+        if piece && piece.class == King && piece.color == color
+          return piece.position
+        end
+      end
+    end
+  end
+
 
   def move(start, end_pos)
   end
@@ -97,6 +115,10 @@ class Piece
   def moves
   end
 
+  def inspect
+    "#{color} #{symbol} at #{position}"
+  end
+
 end
 
 class SlidingPiece < Piece
@@ -110,26 +132,14 @@ class SlidingPiece < Piece
         prev_pos = cur_pos
         cur_pos = [prev_pos[0] + delta[0], prev_pos[1] + delta[1]]
       #  cur_pos = prev_pos.map { |coordinate| [coordinate[0] + delta[0], coordinate[1] + delta[1]] }
-        if ((board[cur_pos] && board[cur_pos].color == self.color) ||
-            (board[prev_pos] && board[prev_pos].color == self.opposing_color) ||
-            !in_bounds?(cur_pos))
+        if (!in_bounds?(cur_pos) ||
+            (board[cur_pos] && board[cur_pos].color == self.color) ||
+            (board[prev_pos] && board[prev_pos].color == self.opposing_color))
           #space is occupied by and ally OR
           #space is blocked by an enemy in the previous square OR
           #space is out of bounds
-          # p position
-          # p "#{cur_pos}: prev: #{prev_pos}"
-          # p "Color at #{cur_pos}: #{board[cur_pos] ? board[cur_pos].color : nil }"
-          # p "#{(board[cur_pos] && board[cur_pos].color == self.color)}"
-          # p "Color at #{prev_pos}: #{board[prev_pos] ? board[prev_pos].color : nil }"
-          # p "#{(board[prev_pos] && board[prev_pos].color == self.opposing_color)}"
           valid = false
         else
-          # p "#{cur_pos}:"
-          # p "Color at #{cur_pos}: #{board[cur_pos] ? board[cur_pos].color : nil }"
-          # p "#{(board[cur_pos] && board[cur_pos].color == self.color)}"
-          # p "Color at #{prev_pos}: #{board[prev_pos] ? board[prev_pos].color : nil }"
-          # p "#{(board[prev_pos] && board[prev_pos].color == self.opposing_color)}"
-
           valid_end_positions << cur_pos
         end
       end
@@ -182,9 +192,10 @@ class SteppingPiece < Piece
     cur_pos = self.position
     directions.each do |delta|
       target_position = [cur_pos[0] + delta[0], cur_pos[1] + delta[1]]
-      unless ((board[target_position] && board[target_position].color == self.color) ||
-        !in_bounds?(target_position))
-        #space is occupied by and ally OR
+      unless (!in_bounds?(target_position) ||
+              (board[target_position] &&
+               board[target_position].color == self.color))
+        #space is occupied by an ally OR
         #space is out of bounds
         valid_end_positions << target_position
       end
@@ -250,8 +261,8 @@ class Pawn < Piece
     #Can move 1 space diagonally forward, if that would capture an opposing piece.
     capture_moves.each do |delta|
       target_position = [pos[0] + delta[0], pos[1] + delta[1]]
-      if (board[target_position] && board[target_position].color == self.opposing_color &&
-        in_bounds?(target_position))
+      if (in_bounds?(target_position) && board[target_position] &&
+          board[target_position].color == self.opposing_color)
         #space is occupied by an enemy AND
         #space is in bounds
         valid_end_positions << target_position
@@ -265,7 +276,7 @@ class Pawn < Piece
     [1,2].each do |i|
       #Can move 1 space forward, if that space is empty.
       target_position = [pos[0] + (i * color_direction), pos[1]]
-      unless board[target_position] || !in_bounds?(target_position)
+      unless !in_bounds?(target_position) || board[target_position]
         valid_end_positions << target_position
       end
       #If the first fails, we know the next won't be valid either.
