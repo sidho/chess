@@ -12,9 +12,9 @@ class Board
 
   attr_accessor :grid
 
-  def initialize
+  def initialize (empty = false)
     @grid = Array.new(8) { Array.new(8) }
-    setup_board
+    setup_board unless empty
   end
 
   def setup_board
@@ -65,27 +65,36 @@ class Board
   end
 
   def in_check?(color)
+    all_opponents = @grid.flatten.compact.select {|p| p.opposing_color == color}
     king_pos = find_king(color)
-    @grid.each_with_index do |rows, r|
-      rows.each_with_index do |piece, c|
-        return true if piece && piece.moves.include?(king_pos)
-      end
-    end
-    false
+    all_opponents.any? {|p| p.moves.include?(king_pos)}
   end
 
   def find_king(color)
-    @grid.each do |rows|
-      rows.each do |piece|
-        if piece && piece.class == King && piece.color == color
-          return piece.position
-        end
-      end
-    end
+    all_allies = @grid.flatten.compact.select { |p| p.color == color}
+    king = all_allies.find { |p| p.class == King }
+    king.position
   end
 
+  def dup
+    board_copy = Board.new(true)
+    @grid.each_with_index do |row, r|
+      row.each_with_index do |piece, c|
+        pos = piece.position.dup
+        color = piece.color
+        board_copy[r][c] = piece.class.new(pos, color, board_copy) if piece
+      end
+    end
+    board_copy
+  end
 
   def move(start, end_pos)
+    raise "No piece at starting position." unless self[start]
+    raise "Invalid ending position." unless self[start].moves.include?(end_pos)
+    self[end_pos] = self[start]
+    self[end_pos].position = end_pos
+    self[end_pos].has_moved = true if self[end_pos].is_a? Pawn
+    self[start] = nil
   end
 
 end
@@ -115,10 +124,15 @@ class Piece
   def moves
   end
 
+  def moves_into_check?(pos)
+    board_copy = @board.dup
+    board_copy.move(position, pos)
+    board_copy.in_check?(color)
+  end
+
   def inspect
     "#{color} #{symbol} at #{position}"
   end
-
 end
 
 class SlidingPiece < Piece
