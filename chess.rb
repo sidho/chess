@@ -97,6 +97,20 @@ class Board
     self[start] = nil
   end
 
+  def render
+    # print "__"; (0..7).each {|i| print "|#{i} "} puts
+    puts "   0  1  2  3  4  5  6  7 "
+    @grid.each_with_index do |row, row_idx|
+      row_string = "#{row_idx} "
+      row.each do |piece|
+        row_string += "|__" unless piece
+        row_string += "|#{piece.render} " if piece
+      end
+      puts row_string + "|"
+    end
+    true
+  end
+
 end
 
 
@@ -133,6 +147,11 @@ class Piece
   def inspect
     "#{color} #{symbol} at #{position}"
   end
+
+  def render
+    "#{symbol}"
+  end
+
 end
 
 class SlidingPiece < Piece
@@ -166,7 +185,7 @@ end
 class Queen < SlidingPiece
   def initialize(position, color, board)
     super
-    @symbol = "Q"
+    @symbol = (color == :black ? "\u265B" : "\u2655")
   end
 
   def moves
@@ -178,7 +197,7 @@ end
 class Rook < SlidingPiece
   def initialize(position, color, board)
     super
-    @symbol = "R"
+    @symbol = (color == :black ? "\u265C" : "\u2656")
   end
 
   def moves
@@ -190,7 +209,7 @@ end
 class Bishop < SlidingPiece
   def initialize(position, color, board)
     super
-    @symbol = "B"
+    @symbol = (color == :black ? "\u265D" : "\u2657")
   end
 
   def moves
@@ -222,7 +241,7 @@ end
 class King < SteppingPiece
   def initialize(position, color, board)
     super
-    @symbol = "K"
+    @symbol = (color == :black ? "\u265A" : "\u2654")
   end
 
   def moves
@@ -245,7 +264,7 @@ class Knight < SteppingPiece
 
   def initialize(position, color, board)
     super
-    @symbol = "H"
+    @symbol = (color == :black ? "\u265E" : "\u2658")
   end
 
   def moves
@@ -260,7 +279,7 @@ class Pawn < Piece
 
   def initialize(position, color, board)
     super
-    @symbol = "P"
+    @symbol = (color == :black ? "\u265F" : "\u2659")
     @has_moved = false
   end
 
