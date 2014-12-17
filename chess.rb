@@ -1,8 +1,70 @@
 
 class Chess
 
+  attr_accessor :board, :players
+
+  def initialize()
+    @board = Board.new
+    @players = [HumanPlayer.new(:white), HumanPlayer.new(:black)]
+    play
+  end
+
+  def play
+    turn_number = 0
+    until won?(players[0]) || won?(players[1])
+      board.render
+      begin
+        start, end_coord = players[turn_number].play_turn
+        board.move(start, end_coord, players[turn_number].color)
+      rescue ArgumentError => e
+        puts "#{e.message} Input a new choice:"
+        retry
+      end
+      turn_number = (turn_number == 0 ? 1 : 0)
+    end
+    board.render
+    puts "#{winner.color.to_s.capitalize} won! Congratulations!"
+  end
+
+  def won?(player)
+    @board.checkmate?(player.opposing_color)
+  end
+
+  def winner
+    #we only call this if someone's won, so binary logic should work here.
+    won?(players[0]) ? players[0] : players[1]
+  end
+
 end
 
+class HumanPlayer
+
+  attr_reader :color
+
+  def initialize(color)
+    @color = color
+  end
+
+  def opposing_color
+    color == :white ? :black : :white
+  end
+
+  def play_turn
+    puts "Select start position: (ex: A5)"
+    start_pos = get_coordinate
+    # 0,0
+    puts "Select end position (ex: B4)"
+    end_pos = get_coordinate
+    [start_pos, end_pos]
+  end
+
+  def get_coordinate
+    letters = %w(A B C D E F G H)
+    pos = gets.chomp.split('')
+    [8 - pos[1].to_i,letters.index(pos[0].upcase)]
+  end
+
+end
 
 class Board
 
@@ -76,32 +138,52 @@ class Board
     king.position
   end
 
+  def checkmate?(color)
+    if in_check?(color)
+      all_allies = @grid.flatten.compact.select { |p| p.color == color}
+      all_allies.any? { |p| !p.valid_moves.empty? } ? false : true
+    else
+      false
+    end
+  end
+
   def dup
     board_copy = Board.new(true)
-    @grid.each_with_index do |row, r|
-      row.each_with_index do |piece, c|
-        pos = piece.position.dup
-        color = piece.color
-        board_copy[r][c] = piece.class.new(pos, color, board_copy) if piece
-      end
+    all_pieces = @grid.flatten.compact
+    all_pieces.each do |piece|
+      pos = piece.position.dup
+      color = piece.color
+      board_copy[pos] = piece.class.new(pos, color, board_copy)
     end
     board_copy
   end
 
-  def move(start, end_pos)
-    raise "No piece at starting position." unless self[start]
-    raise "Invalid ending position." unless self[start].moves.include?(end_pos)
+  def move(start, end_pos, color)
+    raise ArgumentError.new "No piece at starting position." unless self[start]
+    valid_moves = self[start].valid_moves
+    raise ArgumentError.new "Invalid ending position." unless valid_moves.include?(end_pos)
+    if self[start].opposing_color == color
+      raise ArgumentError.new "Can't move opponent's piece, scumbag!"
+    end
     self[end_pos] = self[start]
     self[end_pos].position = end_pos
     self[end_pos].has_moved = true if self[end_pos].is_a? Pawn
     self[start] = nil
   end
 
+  def move!(start, end_pos)
+    self[end_pos] = self[start]
+    self[end_pos].position = end_pos
+    self[start] = nil
+  end
+
   def render
     # print "__"; (0..7).each {|i| print "|#{i} "} puts
-    puts "   0  1  2  3  4  5  6  7 "
+    letters = %w(A B C D E F G H)
+    #puts "   1  2  3  4  5  6  7  8 "
+    puts "   A  B  C  D  E  F  G  H "
     @grid.each_with_index do |row, row_idx|
-      row_string = "#{row_idx} "
+      row_string = "#{8 - row_idx} "
       row.each do |piece|
         row_string += "|__" unless piece
         row_string += "|#{piece.render} " if piece
@@ -135,12 +217,16 @@ class Piece
     (row >= 0 && row <= 7 && col >= 0 && col <= 7)
   end
 
+  def valid_moves
+    self.moves.select { |move| !moves_into_check?(move) }
+  end
+
   def moves
   end
 
   def moves_into_check?(pos)
     board_copy = @board.dup
-    board_copy.move(position, pos)
+    board_copy.move!(position, pos)
     board_copy.in_check?(color)
   end
 
