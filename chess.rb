@@ -9,10 +9,9 @@ require_relative 'knight'
 require_relative 'king'
 require_relative 'pawn'
 require_relative 'human_player'
-require 'io/console'
-# $stdin.getch
-
-#system("clear")
+# require 'io/console'
+# # $stdin.getch
+# #system("clear")
 
 class Chess
   attr_accessor :board, :players
