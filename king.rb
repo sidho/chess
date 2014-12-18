@@ -1,7 +1,7 @@
 class King < SteppingPiece
   def initialize(position, color, board)
     super
-    @symbol = (color == :black ? "\u265A" : "\u2654")
+    @symbol = "\u265A"
   end
 
   def moves

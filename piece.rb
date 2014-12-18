@@ -37,7 +37,7 @@ class Piece
   end
 
   def render
-    "#{symbol}"
+    color == :black ? "#{symbol.light_black}" : "#{symbol.white}"
   end
 
 end

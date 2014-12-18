@@ -3,7 +3,7 @@ class Pawn < Piece
 
   def initialize(position, color, board)
     super
-    @symbol = (color == :black ? "\u265F" : "\u2659")
+    @symbol = "\u265F"
     @has_moved = false
   end
 
@@ -30,7 +30,7 @@ class Pawn < Piece
 
   def pawn_forward(pos)
     valid_end_positions = []
-    [1,2].each do |i|
+    [1, 2].each do |i|
       #Can move 1 space forward, if that space is empty.
       target_position = [pos[0] + (i * color_direction), pos[1]]
       unless !in_bounds?(target_position) || board[target_position]

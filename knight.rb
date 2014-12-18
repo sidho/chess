@@ -12,7 +12,7 @@ class Knight < SteppingPiece
 
   def initialize(position, color, board)
     super
-    @symbol = (color == :black ? "\u265E" : "\u2658")
+    @symbol = "\u265E"
   end
 
   def moves

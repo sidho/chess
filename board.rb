@@ -1,3 +1,4 @@
+require 'colorize'
 class Board
 
   ROOKS = [[0,0], [0,7], [7,0], [7,7]]
@@ -58,21 +59,26 @@ class Board
     @grid[x][y] = value
   end
 
+  def all_pieces(color = nil)
+    return @grid.flatten.compact unless color
+    @grid.flatten.compact.select { |p| p.color == color}
+  end
+
   def in_check?(color)
-    all_opponents = @grid.flatten.compact.select {|p| p.opposing_color == color}
+    all_opponents = all_pieces.select {|p| p.opposing_color == color}
     king_pos = find_king(color)
     all_opponents.any? {|p| p.moves.include?(king_pos)}
   end
 
   def find_king(color)
-    all_allies = @grid.flatten.compact.select { |p| p.color == color}
+    all_allies = all_pieces(color)
     king = all_allies.find { |p| p.class == King }
     king.position
   end
 
   def checkmate?(color)
     if in_check?(color)
-      all_allies = @grid.flatten.compact.select { |p| p.color == color}
+      all_allies = all_pieces(color)
       all_allies.any? { |p| !p.valid_moves.empty? } ? false : true
     else
       false
@@ -81,7 +87,6 @@ class Board
 
   def dup
     board_copy = Board.new(true)
-    all_pieces = @grid.flatten.compact
     all_pieces.each do |piece|
       pos = piece.position.dup
       color = piece.color
@@ -97,10 +102,8 @@ class Board
     if self[start].opposing_color == color
       raise ArgumentError.new "Can't move opponent's piece, scumbag!"
     end
-    self[end_pos] = self[start]
-    self[end_pos].position = end_pos
-    self[end_pos].has_moved = true if self[end_pos].is_a? Pawn
-    self[start] = nil
+    self[start].has_moved = true if self[start].is_a? Pawn
+    move!(start, end_pos)
   end
 
   def move!(start, end_pos)
@@ -109,18 +112,26 @@ class Board
     self[start] = nil
   end
 
+  def toggle_colorize(color)
+    color == :black ? :light_white : :black
+  end
+
   def render
     # print "__"; (0..7).each {|i| print "|#{i} "} puts
     letters = %w(A B C D E F G H)
+    colorize = :light_white
     #puts "   1  2  3  4  5  6  7  8 "
     puts "   A  B  C  D  E  F  G  H "
     @grid.each_with_index do |row, row_idx|
       row_string = "#{8 - row_idx} "
       row.each do |piece|
-        row_string += "|__" unless piece
-        row_string += "|#{piece.render} " if piece
+        tile_string = "   " unless piece
+        tile_string = " #{piece.render} " if piece
+        row_string += tile_string.colorize(:background => colorize)
+        colorize = toggle_colorize(colorize)
       end
-      puts row_string + "|"
+      colorize = toggle_colorize(colorize)
+      puts row_string + " "
     end
     true
   end
